@@ -1,0 +1,8 @@
+random agent success rate (64 runs)
+soft + hard 1682
+hard only   1651
+total       6400
+soft %      26.28%
+hard %      00.48%
+Where 'soft' success is completing it before deadline = -100, and 'hard' success is completing it before deadline = 0.
+
