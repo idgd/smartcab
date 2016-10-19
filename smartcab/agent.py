@@ -3,8 +3,6 @@ from environment import Agent, Environment
 from planner import RoutePlanner
 from simulator import Simulator
 
-num_runs = 0
-
 def make_qtable():
     qtable = {}
     actions = [None,'forward','left','right']
@@ -18,10 +16,10 @@ def make_qtable():
                             qtable[((f, a, b, c, d), e)] = 0
     return qtable
 
-qtable = make_qtable()
-
 class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
+    num_runs = 0
+    qtable = make_qtable()
 
     def __init__(self, env):
         super(LearningAgent, self).__init__(env)  # sets self.env = env, state = None, next_waypoint = None, and a default color
@@ -29,11 +27,14 @@ class LearningAgent(Agent):
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
         # TODO: Initialize any additional variables here
         self.actions = [None,'forward','left','right']
-        self.gamma = 0.5
+        self.gamma = 0.1
+        self.alpha = 0.1
+        self.edivir = 1.1
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
         # TODO: Prepare for a new trip; reset any variables here, if required
+        self.num_runs += 1
 
     def update(self, t):
         # Gather inputs
@@ -59,25 +60,31 @@ class LearningAgent(Agent):
             new_state = update_state()
             maxq = []
             for m in self.actions:
-                maxq.append(qtable[(new_state,m)])
-            qtable[self.state,f] = reward + self.gamma * max(maxq)
-
+                maxq.append(self.qtable[(new_state,m)])
+            self.qtable[self.state,f] = self.qtable[self.state,f] + self.alpha * (reward + self.gamma * max(maxq) - self.qtable[self.state,f])
 
         q_action = []
 
         for f in self.actions:
-            if qtable[self.state,f] == 0.0:
-               q_action.append(qtable[self.state,f])
-               # print ["Undefined Qvalue", qtable[self.state,f]]
-            elif qtable[self.state,f] > 0.0:
-               q_action.append(qtable[self.state,f])
-               # print ["Proper Qvalue action", qtable[self.state,f]]
-            else:
-               q_action.append(qtable[self.state,f])
-               # print ["Negative Qvalue", qtable[self.state,f]]
+            q_action.append(self.qtable[self.state,f])
+            # if self.qtable[self.state,f] == 0.0:
+            #    q_action.append(self.qtable[self.state,f])
+            #    print ["Undefined Qvalue", self.qtable[self.state,f]]
+            # elif self.qtable[self.state,f] > 0.0:
+            #    q_action.append(self.qtable[self.state,f])
+            #    print ["Proper Qvalue action", self.qtable[self.state,f]]
+            # else:
+            #    q_action.append(self.qtable[self.state,f])
+            #    print ["Negative Qvalue", self.qtable[self.state,f]]
 
-        # epsilon = 1/math.pow(
-        action = self.actions[q_action.index(max(q_action))]
+        if self.num_runs == 0:
+           action = random.choice(self.actions)
+        elif self.num_runs != 0:
+           epsilon = 1/pow(self.num_runs,1/self.edivir)
+           if random.random() < epsilon:
+              action = random.choice(self.actions)
+           else:
+              action = self.actions[q_action.index(max(q_action))]
 
         # random choice
         # action = random.choice(self.actions)
@@ -105,7 +112,7 @@ def run():
     # NOTE: You can set enforce_deadline=False while debugging to allow longer trials
 
     # Now simulate it
-    sim = Simulator(e, update_delay=0.0001, display=False)  # create simulator (uses pygame when display=True, if available)
+    sim = Simulator(e, update_delay=0.00001, display=False)  # create simulator (uses pygame when display=True, if available)
     # NOTE: To speed up simulation, reduce update_delay and/or set display=False
 
     sim.run(n_trials=100)  # run for a specified number of trials
