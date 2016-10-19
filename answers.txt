@@ -9,3 +9,26 @@ The 1st, 3rd, 4th, and 5th variables all have 4 possible states. The 2nd variabl
 
 QUESTION: What changes do you notice in the agent's behavior when compared to the basic driving agent when random actions were always taken? Why is this behavior occurring?
 I notice that it fails a lot less. On top of that, it gets better over time; on the 1st run, it's not much better than a random actor, but as it goes on, it improves until it's near perfect. This behaviour is occurring because it's learning the appropriate action for every possible scenario, and takes into account the next_waypoint, which will always points to the best way to get to the destination.
+
+QUESTION: Report the different values for the parameters tuned in your basic implementation of Q-Learning. For which set of parameters does the agent perform best? How well does the final driving agent perform?
+See the tally folder for more details, but the 2 sets of parameters that performed best were:
+gamma = 0.0001
+alpha = 0.0001
+epsilon = 1.0001
+avg success = 68.95%
+and
+gamma = 0.1
+alpha = 0.1
+epsilon = 1.1
+avg success = 67.5%
+In the tally folder, you'll find output from 64 runs of each set of parameters. The 64 lines of numbers in a row are the number of times a given run succeeded out of 100 trials. At the end, I took the average, and got the percentages you see above. The learner performs not as well as I had hoped it would; at only ~70% success, this is not fit for the road, although further tweaking failed to make it better.
+
+QUESTION: Does your agent get close to finding an optimal policy, i.e. reach the destination in the minimum possible time, and not incur any penalties? How would you describe an optimal policy for this problem?
+It does get closer than any random policy, but it's not near 100%. I would describe an optimal policy as a series of if statements, described below:
+if traffic left, right, forward is clear, and light is green:
+   next_waypoint
+elif traffic left and right are clear, and light is green:
+   next_waypoint, excluding left
+elif traffic left is clear, and light is red:
+   next_waypoint, if right
+and so on.
