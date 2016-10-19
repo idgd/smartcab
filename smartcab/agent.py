@@ -25,7 +25,7 @@ class LearningAgent(Agent):
         super(LearningAgent, self).__init__(env)  # sets self.env = env, state = None, next_waypoint = None, and a default color
         self.color = 'red'  # override color
         self.planner = RoutePlanner(self.env, self)  # simple route planner to get next_waypoint
-        # TODO: Initialize any additional variables here
+        # Initialize any additional variables here
         self.actions = [None,'forward','left','right']
         self.gamma = 0.1
         self.alpha = 0.1
@@ -33,7 +33,7 @@ class LearningAgent(Agent):
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
-        # TODO: Prepare for a new trip; reset any variables here, if required
+        # Prepare for a new trip; reset any variables here, if required
         self.num_runs += 1
 
     def update(self, t):
@@ -42,7 +42,7 @@ class LearningAgent(Agent):
         inputs = self.env.sense(self)
         deadline = self.env.get_deadline(self)
 
-        # TODO: Update state
+        # Update state
         def update_state():
             state = (self.planner.next_waypoint(),
                      self.env.sense(self)['light'],
@@ -53,8 +53,9 @@ class LearningAgent(Agent):
 
         self.state = update_state()
 
-        # TODO: Select action according to your policy
+        # Select action according to your policy
 
+        # update qtable with qfunction
         for f in self.actions:
             reward = self.env.act(self, f)
             new_state = update_state()
@@ -67,6 +68,7 @@ class LearningAgent(Agent):
 
         for f in self.actions:
             q_action.append(self.qtable[self.state,f])
+            # uncomment to see qvalues
             # if self.qtable[self.state,f] == 0.0:
             #    q_action.append(self.qtable[self.state,f])
             #    print ["Undefined Qvalue", self.qtable[self.state,f]]
@@ -77,8 +79,10 @@ class LearningAgent(Agent):
             #    q_action.append(self.qtable[self.state,f])
             #    print ["Negative Qvalue", self.qtable[self.state,f]]
 
+        # always start random
         if self.num_runs == 0:
            action = random.choice(self.actions)
+        # from then on random choice between random and best qvalue transition
         elif self.num_runs != 0:
            epsilon = 1/pow(self.num_runs,1/self.edivir)
            if random.random() < epsilon:
@@ -92,12 +96,13 @@ class LearningAgent(Agent):
         # Execute action and get reward
         reward = self.env.act(self, action)
 
-        if self.env.done and deadline < 0:
-           print 'Soft Success'
+        # report successes past the deadline if enforce_deadline = False
+        # if self.env.done and deadline < 0:
+        #    print 'Soft Success'
+
+        # report successes before the deadline
         if self.env.done and deadline > 0:
            print 'Hard Success'
-
-        # TODO: Learn policy based on state, action, reward
 
         # print "LearningAgent.update(): deadline = {}, inputs = {}, action = {}, reward = {}".format(deadline, inputs, action, reward)  # [debug]
 
