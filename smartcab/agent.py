@@ -6,12 +6,11 @@ from simulator import Simulator
 def make_qtable():
     qtable = {}
     actions = [None,'forward','left','right']
-    truncated_actions = ['forward','left','right']
     light = ['red','green']
     for a in light:
         for b in actions:
             for c in actions:
-                for d in truncated_actions:
+                for d in actions[-3:]:
                     for e in actions:
                         qtable[((d, a, b, c), e)] = 0
     return qtable
@@ -27,8 +26,8 @@ class LearningAgent(Agent):
         self.planner = RoutePlanner(self.env, self) # simple route planner to get next_waypoint
 
         self.actions = [None,'forward','left','right']
-        self.gamma = 0.1
-        self.alpha = 0.1
+        self.gamma = 0.3
+        self.alpha = 0.2
         self.edivir = 1.1
         self.previous_state = None
 
@@ -62,7 +61,6 @@ class LearningAgent(Agent):
         # qfunction
         self.qtable[self.previous_state,action] = self.qtable[self.state,action] + self.alpha * (reward + self.gamma * maxq - self.qtable[self.previous_state,action])
 
-        # get list of qvalues for possible actions
         q_actions = [self.qtable[self.previous_state, f] for f in self.actions]
 
         # always start random
@@ -76,11 +74,38 @@ class LearningAgent(Agent):
            else:
               action = self.actions[q_actions.index(max(q_actions))]
 
+        # perfect actor
+        #if self.env.sense(self)['light'] == 'green':
+        #   if self.planner.next_waypoint() == 'forward':
+        #      action = self.planner.next_waypoint()
+        #   elif self.planner.next_waypoint() == 'left':
+        #      if self.env.sense(self)['oncoming'] != 'right' and self.env.sense(self)['oncoming'] != 'forward':
+        #         action = self.planner.next_waypoint()
+        #      else:
+        #         action = None
+        #   else:
+        #      action = self.planner.next_waypoint()
+        #elif self.env.sense(self)['light'] == 'red':
+        #   if self.planner.next_waypoint() == 'forward':
+        #      action = None
+        #   elif self.planner.next_waypoint() == 'right':
+        #      if self.env.sense(self)['left'] != 'forward':
+        #         action = self.planner.next_waypoint()
+        #      else:
+        #         action = None
+        #   else:
+        #      action = None
+        #else:
+        #   action = self.planner.next_waypoint()
+
+        # should be 100% success actor
+        # action = self.next_waypoint
+
         # Execute action and get reward
         reward = self.env.act(self, action)
 
         # report successes
-        if self.env.done and deadline > 0:
+        if self.env.done:
            print 'Success'
 
 def run():
@@ -92,7 +117,7 @@ def run():
     e.set_primary_agent(a, enforce_deadline=True)  # specify agent to track
 
     # Now simulate it
-    sim = Simulator(e, update_delay=0.00001, display=False)  # create simulator
+    sim = Simulator(e, update_delay=0.0000001, display=False)  # create simulator:
 
     sim.run(n_trials=100)  # run for a specified number of trials
 
