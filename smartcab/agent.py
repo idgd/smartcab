@@ -6,14 +6,14 @@ from simulator import Simulator
 def make_qtable():
     qtable = {}
     actions = [None,'forward','left','right']
+    truncated_actions = ['forward','left','right']
     light = ['red','green']
     for a in light:
         for b in actions:
             for c in actions:
-                for d in actions:
+                for d in truncated_actions:
                     for e in actions:
-                        for f in actions:
-                            qtable[((f, a, b, c, d), e)] = 0
+                        qtable[((d, a, b, c), e)] = 0
     return qtable
 
 class LearningAgent(Agent):
@@ -30,6 +30,7 @@ class LearningAgent(Agent):
         self.gamma = 0.1
         self.alpha = 0.1
         self.edivir = 1.1
+        self.previous_state = None
 
     def reset(self, destination=None):
         self.planner.route_to(destination)
@@ -47,8 +48,7 @@ class LearningAgent(Agent):
             state = (self.planner.next_waypoint(),
                      self.env.sense(self)['light'],
                      self.env.sense(self)['oncoming'],
-                     self.env.sense(self)['left'],
-                     self.env.sense(self)['right'])
+                     self.env.sense(self)['left'])
             return state
 
         self.state = update_state()
@@ -56,28 +56,28 @@ class LearningAgent(Agent):
         # Select action according to your policy
 
         # update qtable with qfunction
-        for f in self.actions:
-            reward = self.env.act(self, f)
-            new_state = update_state()
-            maxq = []
-            for m in self.actions:
-                maxq.append(self.qtable[(new_state,m)])
-            self.qtable[self.state,f] = self.qtable[self.state,f] + self.alpha * (reward + self.gamma * max(maxq) - self.qtable[self.state,f])
+        self.previous_state = update_state()
+        action = random.choice(self.actions)
+        reward = self.env.act(self,action)
+        self.state = update_state()
 
-        q_action = []
+        maxq = max([self.qtable[self.state, f] for f in self.actions])
 
-        for f in self.actions:
-            q_action.append(self.qtable[self.state,f])
-            # uncomment to see qvalues
-            # if self.qtable[self.state,f] == 0.0:
-            #    q_action.append(self.qtable[self.state,f])
-            #    print ["Undefined Qvalue", self.qtable[self.state,f]]
-            # elif self.qtable[self.state,f] > 0.0:
-            #    q_action.append(self.qtable[self.state,f])
-            #    print ["Proper Qvalue action", self.qtable[self.state,f]]
-            # else:
-            #    q_action.append(self.qtable[self.state,f])
-            #    print ["Negative Qvalue", self.qtable[self.state,f]]
+        self.qtable[self.previous_state,action] = self.qtable[self.state,action] + self.alpha * (reward + self.gamma * maxq - self.qtable[self.previous_state,action])
+
+        # for f in self.actions:
+        #     uncomment to see qvalues
+        #     if self.qtable[self.state,f] == 0.0:
+        #        q_action.append(self.qtable[self.state,f])
+        #        print ["Undefined Qvalue", self.qtable[self.state,f]]
+        #     elif self.qtable[self.state,f] > 0.0:
+        #        q_action.append(self.qtable[self.state,f])
+        #        print ["Proper Qvalue action", self.qtable[self.state,f]]
+        #     else:
+        #        q_action.append(self.qtable[self.state,f])
+        #        print ["Negative Qvalue", self.qtable[self.state,f]]
+
+        q_actions = [self.qtable[self.previous_state, f] for f in self.actions]
 
         # always start random
         if self.num_runs == 0:
@@ -88,7 +88,7 @@ class LearningAgent(Agent):
            if random.random() < epsilon:
               action = random.choice(self.actions)
            else:
-              action = self.actions[q_action.index(max(q_action))]
+              action = self.actions[q_actions.index(max(q_actions))]
 
         # random choice
         # action = random.choice(self.actions)
