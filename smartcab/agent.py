@@ -3,6 +3,7 @@ from environment import Agent, Environment
 from planner import RoutePlanner
 from simulator import Simulator
 
+# qtable with default values of 0 creation function 
 def make_qtable():
     qtable = {}
     actions = [None, 'forward', 'left', 'right']
@@ -17,6 +18,7 @@ def make_qtable():
 
 class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
+    # number of runs for epsilon, and qtable for the qlearner itself
     num_runs = 0
     qtable = make_qtable()
 
@@ -34,6 +36,7 @@ class LearningAgent(Agent):
     def reset(self, destination=None):
         self.planner.route_to(destination)
 
+        # increment number of runs every time it resets
         self.num_runs += 1
 
     def update(self, t):
@@ -77,6 +80,7 @@ class LearningAgent(Agent):
         else:
            paction = self.planner.next_waypoint()
 
+        # qlearner
         maxq = max([self.qtable[self.state, f] for f in self.actions])
 
         if self.num_runs == 0:
@@ -96,6 +100,7 @@ class LearningAgent(Agent):
               self.state = update_state()
               self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
 
+        # check qlearner's path against perfect path
         if paction != action:
            print "q.act"
         else:
