@@ -5,8 +5,8 @@ from simulator import Simulator
 
 def make_qtable():
     qtable = {}
-    actions = [None,'forward','left','right']
-    light = ['red','green']
+    actions = [None, 'forward', 'left', 'right']
+    light = ['red', 'green']
     for a in light:
         for b in actions:
             for c in actions:
@@ -19,15 +19,17 @@ class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
     num_runs = 0
     qtable = make_qtable()
+    rpath = []
+    ppath = []
 
     def __init__(self, env):
         super(LearningAgent, self).__init__(env) # sets self.env = env, state = None, next_waypoint = None, and a default color
         self.color = 'red' # override color
         self.planner = RoutePlanner(self.env, self) # simple route planner to get next_waypoint
 
-        self.actions = [None,'forward','left','right']
-        self.gamma = 0.3
-        self.alpha = 0.2
+        self.actions = [None, 'forward', 'left', 'right']
+        self.alpha = 0.4
+        self.gamma = 0.2
         self.edivir = 1.1
         self.previous_state = None
 
@@ -51,62 +53,55 @@ class LearningAgent(Agent):
             return state
 
         self.state = update_state()
-
-        # update qtable with qfunction
         self.previous_state = update_state()
-        action = random.choice(self.actions)
-        reward = self.env.act(self,action)
-        self.state = update_state()
+        
+        # perfect actor
+        if self.env.sense(self)['light'] == 'green':
+           if self.planner.next_waypoint() == 'forward':
+              paction = self.planner.next_waypoint()
+           elif self.planner.next_waypoint() == 'left':
+              if self.env.sense(self)['oncoming'] != 'right' and self.env.sense(self)['oncoming'] != 'forward':
+                 paction = self.planner.next_waypoint()
+              else:
+                 paction = None
+           else:
+              paction = self.planner.next_waypoint()
+        elif self.env.sense(self)['light'] == 'red':
+           if self.planner.next_waypoint() == 'forward':
+              paction = None
+           elif self.planner.next_waypoint() == 'right':
+              if self.env.sense(self)['left'] != 'forward':
+                 paction = self.planner.next_waypoint()
+              else:
+                 paction = None
+           else:
+              paction = None
+        else:
+           paction = self.planner.next_waypoint()
+
         maxq = max([self.qtable[self.state, f] for f in self.actions])
-        # qfunction
-        self.qtable[self.previous_state,action] = self.qtable[self.state,action] + self.alpha * (reward + self.gamma * maxq - self.qtable[self.previous_state,action])
 
-        q_actions = [self.qtable[self.previous_state, f] for f in self.actions]
-
-        # always start random
         if self.num_runs == 0:
            action = random.choice(self.actions)
-        # from then on random choice between random and best qvalue transition
-        elif self.num_runs != 0:
-           epsilon = 1/pow(self.num_runs,1/self.edivir)
+           reward = self.env.act(self, action)
+        else:
+           epsilon = 1/pow(self.num_runs, 1/self.edivir)
            if random.random() < epsilon:
               action = random.choice(self.actions)
+              reward = self.env.act(self, action)
+              self.state = update_state()
+              self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
            else:
+              q_actions = [self.qtable[self.previous_state, f] for f in self.actions]
               action = self.actions[q_actions.index(max(q_actions))]
+              reward = self.env.act(self,action)
+              self.state = update_state()
+              self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
 
-        # perfect actor
-        #if self.env.sense(self)['light'] == 'green':
-        #   if self.planner.next_waypoint() == 'forward':
-        #      action = self.planner.next_waypoint()
-        #   elif self.planner.next_waypoint() == 'left':
-        #      if self.env.sense(self)['oncoming'] != 'right' and self.env.sense(self)['oncoming'] != 'forward':
-        #         action = self.planner.next_waypoint()
-        #      else:
-        #         action = None
-        #   else:
-        #      action = self.planner.next_waypoint()
-        #elif self.env.sense(self)['light'] == 'red':
-        #   if self.planner.next_waypoint() == 'forward':
-        #      action = None
-        #   elif self.planner.next_waypoint() == 'right':
-        #      if self.env.sense(self)['left'] != 'forward':
-        #         action = self.planner.next_waypoint()
-        #      else:
-        #         action = None
-        #   else:
-        #      action = None
-        #else:
-        #   action = self.planner.next_waypoint()
-
-        # should be 100% success actor
-        # action = self.next_waypoint
-
-        # Execute action and get reward
-        reward = self.env.act(self, action)
-
-        # report successes
-        if self.env.done:
-           print 'Success'
+        if paction != action:
+           print "q.act"
+        else:
+           print "p.act"
 
 def run():
     """Run the agent for a finite number of trials."""
