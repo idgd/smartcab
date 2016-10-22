@@ -19,8 +19,6 @@ class LearningAgent(Agent):
     """An agent that learns to drive in the smartcab world."""
     num_runs = 0
     qtable = make_qtable()
-    rpath = []
-    ppath = []
 
     def __init__(self, env):
         super(LearningAgent, self).__init__(env) # sets self.env = env, state = None, next_waypoint = None, and a default color
