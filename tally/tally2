@@ -2,5 +2,5 @@ gamma = 0.5
 alpha = 0.5
 epsilon = 1.5
 64 runs with 100 episodes each
-5985/6400
-93.515625%
+5676/6400
+88.6875%
