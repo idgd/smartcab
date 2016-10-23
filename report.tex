@@ -59,7 +59,7 @@ I incremented the number at the end of tally for every unique parameter combinat
 
 \textbf{QUESTION:} Does your agent get close to finding an optimal policy, i.e. reach the destination in the minimum possible time, and not incur any penalties? How would you describe an optimal policy for this problem?
 
-I created a test to see if it was creating the optimal policy by testing my qlearner against a `perfect' actor (one that follows all rules of the road and proceeds as efficiently as possible to the destination). I found that with the first \texttt{gamma}, \texttt{alpha}, and \texttt{epsilon} values listed above, it chooses the \emph{perfect} action 85\% of the time. You can test this on a large number of runs (similar to my variable modification above) by running:
+An optimal policy for this problem is one that follows \emph{all} traffic laws and \emph{always} takes the most efficient route to the destination within those constraints. I created a test to see if it was creating the optimal policy by testing my qlearner against a `perfect' actor (one that follows all rules of the road and proceeds as efficiently as possible to the destination). I found that with the first \texttt{gamma}, \texttt{alpha}, and \texttt{epsilon} values listed above, it chooses the \emph{perfect} action 94\% of the time (assuming that you only measure the last ten runs, as that's when it should most follow policy). This means that the qlearner, after 90 runs and above, will follow traffic laws or do the most optimal thing 94\% of the time. Please note it's not necessarily breaking the law, it could also just be that it does not take the fastest route sometimes. You can test this on a large number of runs (similar to my variable modification above) by running:
 
 \begin{lstlisting}
 for f in {1..64}; do python smartcab/agent.py; done > out \
@@ -67,7 +67,7 @@ grep 'p.act' out | wc -l \
 grep 'q.act' out | wc -l
 \end{lstlisting}
 
-That will give you the raw number of perfect acts (p.act) and the number of qlearner acts (q.act). Divide them by each other to find the exact percentage.
+That will give you the raw number of perfect acts (p.act) and the number of qlearner acts (q.act). Divide them by each other to find the exact percentage for that run.
 
 A perfect policy is implemented in the code under the perfect actor comment. You can test it by acting on \texttt{paction} instead of \texttt{action}. It is defined as one that follows all traffic laws and gets to the destination as soon as possible.
 

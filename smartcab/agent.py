@@ -100,11 +100,12 @@ class LearningAgent(Agent):
               self.state = update_state()
               self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
 
-        # check qlearner's path against perfect path
-        if paction != action:
-           print "q.act"
-        else:
-           print "p.act"
+        # check qlearner's path against perfect path in the last 10 runs
+        if self.num_runs >= 90:
+           if paction != action:
+              print "q.act"
+           else:
+              print "p.act"
 
 def run():
     """Run the agent for a finite number of trials."""
