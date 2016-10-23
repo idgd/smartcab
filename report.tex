@@ -1,6 +1,7 @@
 \documentclass[11pt]{article}
 
-%\usepackage{utopia}
+\usepackage{mathtools}
+\usepackage{pgfplots}
 \usepackage{setspace}
 \usepackage{listings}
 \usepackage[margin=8em]{geometry}
@@ -25,31 +26,62 @@
 
 \begin{document}
 
+\noindent
 \textbf{QUESTION:} Observe what you see with the agent's behavior as it takes random actions. Does the smartcab eventually make it to the destination? Are there any other interesting observations to note?
 
 When it's totally random, it hits the hard time limit of -100 quite a few times. As it's entirely random, it does not care about traffic or the lights, making it an incredibly dangerous driver. Unless every other driver on the road is incredibly skilled, this car is not likely to make it to its destination in one piece! It only has around ~20\% success rate on average. See tally for details.
 
+\noindent
 \textbf{QUESTION:} What states have you identified that are appropriate for modeling the smartcab and environment? Why do you believe each of these states to be appropriate for this problem?
 
-Almost all of the input is logically necessary for the state to function, except for the deadline variable and the right traffic. Because the deadline changes depending on the number of moves made, it makes for a poor teacher as far as state goes. The learner is very likely to encounter the same combination of the other variables (oncoming, left, and light), but rarely will it encounter the same combination of the others \emph{and} the deadline, making for an exceedingly poor learner. Kind of an equivalent to overfitting. However, adding on one more variable, \texttt{next\_waypoint}, should be a good thing, because we want the qlearner to associate good things with getting closer to the target position (which is the only place that \texttt{next\_waypoint} will be equal to \texttt{None}, so we can safely leave that out). The one other variable we can probably get rid of is actually the right traffic input. According to the specifications of the project, we never have to worry about them.
+Almost all of the input is logically necessary for the state to function, except for the deadline variable and the right traffic. Because the deadline changes depending on the number of moves made, it makes for a poor teacher as far as state goes. The learner is very likely to encounter the same combination of the other variables (oncoming, left, and light), but rarely will it encounter the same combination of the others \emph{and} the deadline, making for an exceedingly poor learner. Kind of an equivalent to overfitting. However, adding on one more variable, \texttt{next\_waypoint}, should be a good thing, because we want the qlearner to associate good things with getting closer to the target position (which is the only place that \texttt{next\_waypoint} will be equal to \texttt{None}, so we can safely leave that out). The one other variable we can probably get rid of is actually the right traffic input. According to the specifications of the project, we never have to worry about them. When going \texttt{forward} through a green light, the traffic on your right cannot do anything; its only legal action is \texttt{None}. The reason for this is because your only legal action on a red light is taking a right, and \emph{only} when there is no oncoming traffic from your left. Since the smartcab would be the oncoming traffic in this situation, the other car must wait. If you are taking a \texttt{left} or \texttt{right} on that green light, that traffic can't legally take any actions which even interfere with your actions. On a red light, again, it cannot take any action which will interfere with your only options: \texttt{None} and \texttt{right}.
 
+\noindent
 \textbf{QUESTION:} How many states in total exist for the smartcab in this environment? Does this number seem reasonable given that the goal of Q-Learning is to learn and make informed decisions about each state? Why or why not?
 
 There are four variables in the state. Two of them have four possible values, one has three, and the last has only two. \texttt{Oncoming} and \texttt{left} both have four possible values, \texttt{None}, \texttt{forward}, \texttt{left}, and \texttt{right}. \texttt{next\_waypoint}, while it technically has four, we can safely ignore one of its values completely, \texttt{None}. Because \texttt{None} only shows up when the destination has been reached, we can safely use only the last three variables. Finally, there is the \texttt{light} variable, which has only two possible values: \texttt{red} and \texttt{green}.
 
+\noindent
 \textbf{QUESTION:} What changes do you notice in the agent's behavior when compared to the basic driving agent when random actions were always taken? Why is this behavior occurring?
 
-I notice that it fails a lot less, firstly. On top of that, it gets better over time; in the beginning it takes many random actions, but as it goes on, it improves until it's near perfect. This behavior is occurring because it's learning the appropriate action for every possible scenario, and takes into account the \texttt{next\_waypoint}, which always points to the best way to get to the destination.
+I notice that it fails a lot less, firstly. On top of that, it gets better over time; in the beginning it takes many random actions, but as it goes on, it improves until it's near perfect. This behavior is occurring because it's learning the appropriate action for every possible scenario, and takes into account the \texttt{next\_waypoint}, which always points to the fastest way to get to the destination.
 
+The qlearner always begins with a random action, but after the first run is completed, the qlearner starts making qlearned moves as well. As runs proceed, it begins to obey traffic law more often, and get to the destination with less moves made. Because epsilon is decreasing, and the check on whether or not to make a random action is based on whether a randomly generated number is less than epsilon, the amount of random (and therefore unsafe/inefficient, but good for teaching) actions decreases over time, moving towards the near-perfect actor of the qlearner.
+
+\noindent
 \textbf{QUESTION:} Report the different values for the parameters tuned in your basic implementation of Q-Learning. For which set of parameters does the agent perform best? How well does the final driving agent perform?
 
 See the tally folder for more details, but the best values I found were only marginally separated:
+
 \begin{itemize}
 \item gamma = 0.2, alpha = 0.4, epsilon = 1.1, success = 93.890625\%
 \item gamma = 0.5, alpha = 0.5, epsilon = 1.5, success = 93.515625\%
 \end{itemize}
 
-In the tally folder, you'll find output from 64 runs of each set of parameters. The exact command used for each variable modification was:
+To clarify, the \texttt{epsilon} variable above is not literally what epsilon is, it is a constant in a function which creates epsilon:
+
+\(\delta\) = number of runs, \(\epsilon\) = \texttt{epsilon} above
+
+\begin{center}
+\vspace{7em}
+\hspace{-20em}{\huge \(\frac{1}{\delta^\frac{1}{\epsilon}}\)}
+
+\vspace{-10em}
+\hspace{5em}\begin{tikzpicture}
+  \begin{axis}[ytick={0,1},
+               xtick={0,1,2,3,4,5,6,7,8,9,10},
+               xmin=0, xmax=10,
+               ymin=0, ymax=1,]
+    \addplot+[mark=none,
+    smooth,
+    domain=0:10, 
+    samples=20, 
+    color=red](\x,{1/\x^1/1.5});
+  \end{axis}
+\end{tikzpicture}
+\end{center}
+
+The function decreases over time, I use the term \texttt{epsilon} for brevity in description. In the tally folder, you'll find output from 64 runs of each set of parameters. The exact command used for each variable modification was:
 
 \begin{lstlisting}
 for f in {1..64}; do python smartcab/agent.py; done | grep 'Primary agent has reached destination' | wc -l >> tally
@@ -57,6 +89,7 @@ for f in {1..64}; do python smartcab/agent.py; done | grep 'Primary agent has re
 
 I incremented the number at the end of tally for every unique parameter combination, and manually modified the values at the beginning.
 
+\noindent
 \textbf{QUESTION:} Does your agent get close to finding an optimal policy, i.e. reach the destination in the minimum possible time, and not incur any penalties? How would you describe an optimal policy for this problem?
 
 An optimal policy for this problem is one that follows \emph{all} traffic laws and \emph{always} takes the most efficient route to the destination within those constraints. I created a test to see if it was creating the optimal policy by testing my qlearner against a `perfect' actor (one that follows all rules of the road and proceeds as efficiently as possible to the destination). I found that with the first \texttt{gamma}, \texttt{alpha}, and \texttt{epsilon} values listed above, it chooses the \emph{perfect} action 94\% of the time (assuming that you only measure the last ten runs, as that's when it should most follow policy). This means that the qlearner, after 90 runs and above, will follow traffic laws or do the most optimal thing 94\% of the time. Please note it's not necessarily breaking the law, it could also just be that it does not take the fastest route sometimes. You can test this on a large number of runs (similar to my variable modification above) by running:

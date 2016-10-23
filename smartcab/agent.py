@@ -81,24 +81,20 @@ class LearningAgent(Agent):
            paction = self.planner.next_waypoint()
 
         # qlearner
-        maxq = max([self.qtable[self.state, f] for f in self.actions])
-
         if self.num_runs == 0:
            action = random.choice(self.actions)
-           reward = self.env.act(self, action)
         else:
            epsilon = 1/pow(self.num_runs, 1/self.edivir)
            if random.random() < epsilon:
               action = random.choice(self.actions)
-              reward = self.env.act(self, action)
-              self.state = update_state()
-              self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
            else:
               q_actions = [self.qtable[self.previous_state, f] for f in self.actions]
               action = self.actions[q_actions.index(max(q_actions))]
-              reward = self.env.act(self,action)
-              self.state = update_state()
-              self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
+           
+        reward = self.env.act(self, action)
+        self.state = update_state()
+        maxq = max([self.qtable[self.state, f] for f in self.actions])
+        self.qtable[self.previous_state, action] = (1 - self.alpha) * self.qtable[self.previous_state, action] + self.alpha * (reward + self.gamma * maxq)
 
         # check qlearner's path against perfect path in the last 10 runs
         if self.num_runs >= 90:
